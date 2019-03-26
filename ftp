@@ -1,4 +1,4 @@
-private void upload_file(string filename)
+private void UploadFile(string filename)
 {
     if (!string.IsNullOrEmpty(filename))
     {
@@ -69,3 +69,23 @@ protected override void OnActivityResult(int requestCode, Result resultCode, Int
     // Dispose of the Java side bitmap.
     GC.Collect();
 }
+
+private void DisplayImage()
+{
+    this.skip_half_full = notice.skip_half_full;
+
+    _file = new Java.IO.File(_dir, notice.skip_half_full);
+
+    int height = 200; // Resources.DisplayMetrics.HeightPixels;
+    int width = 200; // imageView1.Width;
+    bitmap = _file.Path.LoadAndResizeBitmap(width, height);
+    if (bitmap != null)
+    {
+        imageView1.SetImageBitmap(bitmap);
+        bitmap = null;
+    }
+
+    // Dispose of the Java side bitmap.
+    GC.Collect();
+                
+ }
