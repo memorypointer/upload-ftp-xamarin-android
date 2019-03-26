@@ -1,25 +1,71 @@
 private void upload_file(string filename)
+{
+    if (!string.IsNullOrEmpty(filename))
+    {
+        string ftpfullpath = "ftp://" + Global.FTP_HOST + "//" + filename;
+        FtpWebRequest ftp = (FtpWebRequest)FtpWebRequest.Create(ftpfullpath);
+        ftp.Credentials = new NetworkCredential(Global.FTP_USERNAME, Global.FTP_PASSWORD);
+        //userid and password for the ftp server to given  
+
+        ftp.KeepAlive = true;
+        ftp.UseBinary = true;
+        ftp.Method = WebRequestMethods.Ftp.UploadFile;
+
+        using (FileStream fs = File.OpenRead(_dir + "//" + filename))
         {
-            if (!string.IsNullOrEmpty(filename))
-            {
-                string ftpfullpath = "ftp://" + Global.FTP_HOST + "//" + filename;
-                FtpWebRequest ftp = (FtpWebRequest)FtpWebRequest.Create(ftpfullpath);
-                ftp.Credentials = new NetworkCredential(Global.FTP_USERNAME, Global.FTP_PASSWORD);
-                //userid and password for the ftp server to given  
+            byte[] buffer = new byte[fs.Length];
+            fs.Read(buffer, 0, buffer.Length);
+            fs.Close();
 
-                ftp.KeepAlive = true;
-                ftp.UseBinary = true;
-                ftp.Method = WebRequestMethods.Ftp.UploadFile;
-
-                using (FileStream fs = File.OpenRead(_dir + "//" + filename))
-                {
-                    byte[] buffer = new byte[fs.Length];
-                    fs.Read(buffer, 0, buffer.Length);
-                    fs.Close();
-
-                    Stream ftpstream = ftp.GetRequestStream();
-                    ftpstream.Write(buffer, 0, buffer.Length);
-                    ftpstream.Close();
-                }
-            }
+            Stream ftpstream = ftp.GetRequestStream();
+            ftpstream.Write(buffer, 0, buffer.Length);
+            ftpstream.Close();
         }
+    }
+}
+
+private void BtnDeliveryTicket_Click(object sender, EventArgs e)
+{
+    Intent intent = new Intent(MediaStore.ActionImageCapture);
+
+    delivery_ticket = String.Format("cwn_{0}.jpg", Guid.NewGuid());
+
+    _file = new Java.IO.File(_dir, delivery_ticket);
+
+    //intent.PutExtra(MediaStore.ExtraOutput, Android.Net.Uri.FromFile(_file));
+
+    intent.PutExtra(MediaStore.ExtraOutput, FileProvider.GetUriForFile(Application.Context, Application.Context.PackageName + ".fileprovider", _file));
+    StartActivityForResult(intent, Global.DELIVERY_TICKET);
+}
+
+protected override void OnActivityResult(int requestCode, Result resultCode, Intent data)
+{
+    base.OnActivityResult(requestCode, resultCode, data);
+
+    // Make it available in the gallery
+    Intent mediaScanIntent = new Intent(Intent.ActionMediaScannerScanFile);
+    //Android.Net.Uri contentUri = Android.Net.Uri.FromFile(_file);
+    var contentUri = FileProvider.GetUriForFile(Application.Context, Application.Context.PackageName + ".fileprovider", _file);
+    mediaScanIntent.SetData(contentUri);
+    SendBroadcast(mediaScanIntent);
+
+    // Display in ImageView. We will resize the bitmap to fit the display.
+    // Loading the full sized image will consume too much memory
+    // and cause the application to crash.
+
+    // Delivery Ticket
+    else if (requestCode == Global.DELIVERY_TICKET)
+    {
+        int height = Resources.DisplayMetrics.HeightPixels;
+        int width = imageView4.Height;
+        bitmap = _file.Path.LoadAndResizeBitmap(width, height);
+        if (bitmap != null)
+        {
+            imageView4.SetImageBitmap(bitmap);
+            bitmap = null;
+        }
+    }
+
+    // Dispose of the Java side bitmap.
+    GC.Collect();
+}
