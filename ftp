@@ -1,0 +1,25 @@
+private void upload_file(string filename)
+        {
+            if (!string.IsNullOrEmpty(filename))
+            {
+                string ftpfullpath = "ftp://" + Global.FTP_HOST + "//" + filename;
+                FtpWebRequest ftp = (FtpWebRequest)FtpWebRequest.Create(ftpfullpath);
+                ftp.Credentials = new NetworkCredential(Global.FTP_USERNAME, Global.FTP_PASSWORD);
+                //userid and password for the ftp server to given  
+
+                ftp.KeepAlive = true;
+                ftp.UseBinary = true;
+                ftp.Method = WebRequestMethods.Ftp.UploadFile;
+
+                using (FileStream fs = File.OpenRead(_dir + "//" + filename))
+                {
+                    byte[] buffer = new byte[fs.Length];
+                    fs.Read(buffer, 0, buffer.Length);
+                    fs.Close();
+
+                    Stream ftpstream = ftp.GetRequestStream();
+                    ftpstream.Write(buffer, 0, buffer.Length);
+                    ftpstream.Close();
+                }
+            }
+        }
